@@ -396,7 +396,7 @@ class Spatial_Markov:
         npa = np.array
         self.fixed = fixed
         self.variable_name = variable_name
-        binmethod, args = _get_method(method, k)
+        binmethod, kw = self._get_method(method, k)
 
         if fixed:
             yf = y.flatten()
@@ -451,9 +451,6 @@ class Spatial_Markov:
             self.x2_realizations = x2_realizations
 
     def _get_method(self, method, k):
-        """
-            get quantification method to be used with markov analysis
-        """
         if method == 'quantiles':
             print method
             binmethod = pysal.Quantiles
@@ -467,11 +464,11 @@ class Spatial_Markov:
             binmethod = pysal.Percentiles
             kw = {"pct": [1, 10, 33, 50, 90, 99, 100]}
         elif method == 'headtail':
-            print method
-            binmethod = pysal.HeadTail_Breaks
+            print method, 'for realz'
+            binmethod = pysal.esda.mapclassify.HeadTail_Breaks
             kw = {}
         else:
-            print method
+            print 'Choosing quantiles, not %s' % method
             binmethod = pysal.Quantiles
             kw = {"k": k}
 
