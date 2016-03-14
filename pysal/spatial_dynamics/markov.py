@@ -387,7 +387,7 @@ class Spatial_Markov:
    
     """
     def __init__(self, y, w, k=4, permutations=0, fixed=False,
-                 variable_name=None):
+                 variable_name=None, method='quantiles'):
 
         self.y = y
         rows, cols = y.shape
@@ -396,20 +396,23 @@ class Spatial_Markov:
         npa = np.array
         self.fixed = fixed
         self.variable_name = variable_name
+        binmethod, args = _get_method(method, k)
+
         if fixed:
             yf = y.flatten()
-            yb = pysal.Quantiles(yf, k=k).yb
+            yb = binmethod(yf, **kw).yb
+            print binmethod(yf, **kw).bins
             yb.shape = (rows, cols)
             classes = yb
         else:
-            classes = npa([pysal.Quantiles(y[:, i], k=k)
+            classes = npa([binmethod(y[:, i], **kw)
                            .yb for i in np.arange(cols)]).transpose()
         classic = Markov(classes)
         self.classes = classes
         self.p = classic.p
         self.s = classic.steady_state
         self.transitions = classic.transitions
-        T, P, ss, F = self._calc(y, w, classes, k=k)
+        T, P, ss, F = self._calc(y, w, classes, k, binmethod, kw)
         self.T = T
         self.P = P
         self.S = ss
@@ -447,17 +450,40 @@ class Spatial_Markov:
             self.x2_rpvalue = (counter + 1.0) / (permutations + 1.)
             self.x2_realizations = x2_realizations
 
-    def _calc(self, y, w, classes, k):
+    def _get_method(self, method, k):
+        """
+            get quantification method to be used with markov analysis
+        """
+        if method == 'quantiles':
+            print method
+            binmethod = pysal.Quantiles
+            kw = {"k": k}
+        elif method == 'stdmean':
+            print method
+            binmethod = pysal.Std_Mean
+            kw = {"multiples": [0, 1, 2, 3, 4, 5]}
+        elif method == 'percentiles':
+            print method
+            binmethod = pysal.Percentiles
+            kw = {"pct": [1, 10, 33, 50, 90, 99, 100]}
+        else:
+            print method
+            binmethod = pysal.Quantiles
+            kw = {"k": k}
+
+        return binmethod, kw
+
+    def _calc(self, y, w, classes, k, method, kw):
         # lag markov
         ly = pysal.lag_spatial(w, y)
         npm = np.matrix
         npa = np.array
         if self.fixed:
-            l_classes = pysal.Quantiles(ly.flatten(), k=k).yb
+            l_classes = method(ly.flatten(), **kw).yb
             l_classes.shape = ly.shape
         else:
-            l_classes = npa([pysal.Quantiles(
-                ly[:, i], k=k).yb for i in np.arange(self.cols)])
+            l_classes = npa([method(
+                ly[:, i], **kw).yb for i in np.arange(self.cols)])
             l_classes = l_classes.transpose()
         l_classic = Markov(l_classes)
         T = np.zeros((k, k, k))
