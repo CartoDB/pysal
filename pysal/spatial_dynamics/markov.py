@@ -466,6 +466,10 @@ class Spatial_Markov:
             print method
             binmethod = pysal.Percentiles
             kw = {"pct": [1, 10, 33, 50, 90, 99, 100]}
+        elif method == 'headtail':
+            print method
+            binmethod = pysal.HeadTail_Breaks
+            kw = {}
         else:
             print method
             binmethod = pysal.Quantiles
