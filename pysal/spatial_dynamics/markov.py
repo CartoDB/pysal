@@ -459,6 +459,7 @@ class Spatial_Markov:
             l_classes = npa([pysal.Quantiles(
                 ly[:, i], k=k).yb for i in np.arange(self.cols)])
             l_classes = l_classes.transpose()
+        self.l_classes = l_classes
         l_classic = Markov(l_classes)
         T = np.zeros((k, k, k))
         n, t = y.shape
